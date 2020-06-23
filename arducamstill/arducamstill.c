@@ -784,7 +784,6 @@ static void * h264_save_thread(void *arg)
 		buffer = mmal_queue_timedwait(dev->save_queue, 500);
 		if (!buffer)
 			continue;
-		
 		if (dev->image_fd)
 		{
 			bytes_written = fwrite(buffer->data, 1, buffer->length, dev->image_fd);
@@ -1379,16 +1378,19 @@ static MMAL_STATUS_T create_video_encoder_component(struct device *dev)
 	}
     vcos_status = vcos_thread_create(&dev->save_thread, "h264-save-thread",
 				NULL, h264_save_thread, dev);
-	if(dev->imageName == NULL){
-		dev->imageName = "arducam.h264";
-	}
-	dev->image_fd = fopen(dev->imageName,"wb");
 	if(vcos_status != VCOS_SUCCESS)
 	{
 		print("Failed to create save thread\n");
 		return -1;
 	}
-
+	if(dev->imageName == NULL){
+		dev->imageName = "arducam.h264";
+	}
+	if( strcmp(dev->imageName,"stdout") == 0){
+		dev->image_fd = stdout;
+	}else{
+	dev->image_fd = fopen(dev->imageName,"wb");
+	}
     // Set the rate control paramete
     if (state->encoding == MMAL_ENCODING_H264) {
         MMAL_PARAMETER_VIDEO_PROFILE_T param;
@@ -1641,7 +1643,6 @@ static int video_do_capture(struct device *dev)
 					if(time(NULL) - begin >= 1){
             		 	printf("\r[Framerate]: %02d fps.", 
                     	frameCnt);
-             			fflush(stdout); 
             			frameCnt = 0;
             			begin = time(NULL);
         			 }
