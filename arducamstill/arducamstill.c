@@ -1643,6 +1643,7 @@ static int video_do_capture(struct device *dev)
 					if(time(NULL) - begin >= 1){
             		 	printf("\r[Framerate]: %02d fps.", 
                     	frameCnt);
+						fflush(stdout);
             			frameCnt = 0;
             			begin = time(NULL);
         			 }
