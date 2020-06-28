@@ -40,6 +40,7 @@ awk 'BEGIN{ count=0 }       \
 }' /boot/config.txt
 echo "Add cma=128M to /boot/cmdline.txt "
 echo "--------------------------------------"
+sudo sed 's/cma=128M//g' -i /boot/cmdline.txt
 sudo sed 's/$/& cma=128M/g' -i /boot/cmdline.txt
 echo "Installing the arudcam.ko driver"
 echo "--------------------------------------"
