@@ -1,5 +1,6 @@
 #!/bin/bash
- sudo sed 's/^dtoverlay=arducam/#dtoverlay=arducam/g' -i /boot/config.txt
+echo "uninstall arducam driver"
+sudo sed 's/^dtoverlay=arducam/#dtoverlay=arducam/g' -i /boot/config.txt
 echo "reboot now?(y/n):"
 read USER_INPUT
 case $USER_INPUT in

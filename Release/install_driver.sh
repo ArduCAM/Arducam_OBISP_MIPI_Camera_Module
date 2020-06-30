@@ -43,7 +43,7 @@ echo "--------------------------------------"
 sudo sed 's/cma=128M//g' -i /boot/cmdline.txt
 sudo sed 's/[[:blank:]]*$//' -i /boot/cmdline.txt
 sudo sed 's/$/& cma=128M/g' -i /boot/cmdline.txt
-echo "Installing the arudcam.ko driver"
+echo "Installing the arducam.ko driver"
 echo "--------------------------------------"
 sudo install -p -m 644 ./bin/$(uname -r)/arducam.ko  /lib/modules/$(uname -r)/kernel/drivers/media/i2c/
 sudo install -p -m 644 ./bin/$(uname -r)/arducam.dtbo /boot/overlays/
