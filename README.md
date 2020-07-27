@@ -4,3 +4,6 @@ Arducam OBISP project is to address the problem of lacking ISP support for the R
 
 # Support document
 https://www.arducam.com/docs/arducam-obisp-mipi-camera-module/
+
+# Video Demo
+https://youtu.be/MlRbOJ9n3Q4
