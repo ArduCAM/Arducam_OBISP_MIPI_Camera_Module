@@ -40,6 +40,125 @@
 #endif
 
 #define ARRAY_SIZE(a)	(sizeof(a)/sizeof((a)[0]))
+#define RPI_FIRMWARE_DEV "/dev/vcio"
+#define IOCTL_RPI_FIRMWARE_PROPERTY _IOWR(100, 0, char*)
+#define RPI_FIRMWARE_STATUS_REQUEST 0
+#define RPI_FIRMWARE_STATUS_SUCCESS 0x80000000
+#define RPI_FIRMWARE_STATUS_ERROR   0x80000001
+#define RPI_FIRMWARE_PROPERTY_END   0
+#define RPI_FIRMWARE_SET_GPIO_STATE 0x00038041
+
+
+#define RPI_MANUFACTURER_MASK                    (0xf << 16)
+#define RPI_WARRANTY_MASK                        (0x3 << 24)
+#define LINE_WIDTH_MAX                           80
+#define HW_VER_STRING                            "Revision"
+#define HIGH                                     1
+#define LOW                                      0
+int write_real_gpio(int gpio,int value);
+int write_virtual_gpio(int gpio,int value);
+
+typedef struct {
+    uint32_t hwver;
+    uint32_t powerEn;
+    char *desc;
+    int (*pFunc)(int value1,int value2);
+} rpi_hw_t;
+
+static const rpi_hw_t rpi_hw_info[] = {
+     // Model 3B
+    {
+        .hwver  = 0xa22082,
+        .powerEn = 133,
+        .desc = "Model 3B",
+        .pFunc = write_virtual_gpio,
+    },
+};
+const rpi_hw_t *rpi_hw_detect(void)
+{
+    FILE *f = fopen("/proc/cpuinfo", "r");
+    char line[LINE_WIDTH_MAX];
+    const rpi_hw_t *result = NULL;
+
+    if (!f)
+    {
+        return NULL;
+    }
+
+    while (fgets(line, LINE_WIDTH_MAX - 1, f))
+    {
+        if (strstr(line, HW_VER_STRING))
+        {
+            uint32_t rev;
+            char *substr;
+            unsigned i;
+
+            substr = strstr(line, ": ");
+            if (!substr)
+            {
+                continue;
+            }
+
+            errno = 0;
+            rev = strtoul(&substr[1], NULL, 16);  // Base 16
+            if (errno)
+            {
+                continue;
+            }
+            printf("Hardare version: %x\r\n",rev);
+            for (i = 0; i < (sizeof(rpi_hw_info) / sizeof(rpi_hw_info[0])); i++)
+            {
+                uint32_t hwver = rpi_hw_info[i].hwver;
+                // Take out warranty and manufacturer bits
+                hwver &= ~(RPI_WARRANTY_MASK | RPI_MANUFACTURER_MASK);
+                rev &= ~(RPI_WARRANTY_MASK | RPI_MANUFACTURER_MASK);
+                
+                if (rev == hwver)
+                {
+                    result = &rpi_hw_info[i];
+
+                    goto done;
+                }
+            }
+        }
+    }
+done:
+    fclose(f);
+    return result;
+}
+
+int write_real_gpio(int gpio,int value){
+char buffer[1024] = {0};
+sprintf(buffer,"gpio -g write %d %d",gpio, value);
+printf("%s\n",buffer);
+system(buffer);
+return 0;
+}
+int write_virtual_gpio(int gpio,int value){
+    int fd;
+  fd = open(RPI_FIRMWARE_DEV, O_NONBLOCK);
+  if (fd == -1) {
+    return -1;
+  }
+    uint32_t buf[] = { 
+        8 * sizeof(uint32_t), 
+        RPI_FIRMWARE_STATUS_REQUEST, 
+        RPI_FIRMWARE_SET_GPIO_STATE, 
+        2 * sizeof(int), 
+        0, 
+        gpio,
+        value ? 1 : 0,
+        RPI_FIRMWARE_PROPERTY_END
+    };
+    int ret = ioctl(fd, IOCTL_RPI_FIRMWARE_PROPERTY, buf);
+    if(ret == -1){
+        return -1;
+    }
+    if(buf[1] != RPI_FIRMWARE_STATUS_SUCCESS){
+        return -1;
+    }
+    return 0;
+}
 
 int debug = 1;
 #define print(...) do { if (debug) printf(__VA_ARGS__); }  while (0)
@@ -214,8 +333,8 @@ static struct v4l2_format_info {
 	{ "RGB555", V4L2_PIX_FMT_RGB555, 1,	MMAL_ENCODING_UNUSED },
 	{ "ARGB555", V4L2_PIX_FMT_ARGB555, 1,	MMAL_ENCODING_UNUSED },
 	{ "XRGB555", V4L2_PIX_FMT_XRGB555, 1,	MMAL_ENCODING_UNUSED },
-	{ "RGB565", V4L2_PIX_FMT_RGB565, 1,		MMAL_ENCODING_RGB16 },
-	{ "BGR888", V4L2_PIX_FMT_BGR24, 1,		MMAL_ENCODING_BGR24 },
+	{ "RGB565", V4L2_PIX_FMT_RGB565, 1,		MMAL_ENCODING_RGB16  },
+	{ "BGR888", V4L2_PIX_FMT_BGR24, 1,		MMAL_ENCODING_BGR24  },
 	{ "RGB888", V4L2_PIX_FMT_RGB24, 1,		MMAL_ENCODING_RGB24 },
 	{ "RGB555X", V4L2_PIX_FMT_RGB555X, 1,	MMAL_ENCODING_UNUSED },
 	{ "RGB565X", V4L2_PIX_FMT_RGB565X, 1,	MMAL_ENCODING_RGB16 },
@@ -230,8 +349,8 @@ static struct v4l2_format_info {
 	{ "XRGB32", V4L2_PIX_FMT_XRGB32, 1,	MMAL_ENCODING_UNUSED },
 	{ "HSV24", V4L2_PIX_FMT_HSV24, 1,	MMAL_ENCODING_UNUSED },
 	{ "HSV32", V4L2_PIX_FMT_HSV32, 1,	MMAL_ENCODING_UNUSED },
-	{ "Y8", V4L2_PIX_FMT_GREY, 1,		MMAL_ENCODING_UNUSED },
-	{ "Y10", V4L2_PIX_FMT_Y10, 1,		MMAL_ENCODING_UNUSED },
+	{ "GREY", V4L2_PIX_FMT_GREY, 1,  MMAL_ENCODING_BAYER_SBGGR8},
+	{ "Y10P", V4L2_PIX_FMT_Y10P, 1,	MMAL_ENCODING_BAYER_SGBRG10P},
 	{ "Y12", V4L2_PIX_FMT_Y12, 1,		MMAL_ENCODING_UNUSED },
 	{ "Y16", V4L2_PIX_FMT_Y16, 1,		MMAL_ENCODING_UNUSED },
 	{ "UYVY", V4L2_PIX_FMT_UYVY, 1,		MMAL_ENCODING_UYVY },
@@ -269,7 +388,8 @@ static struct v4l2_format_info {
 	{ "SBGGR10P", V4L2_PIX_FMT_SBGGR10P, 1,	MMAL_ENCODING_BAYER_SBGGR10P },
 	{ "SGBRG10P", V4L2_PIX_FMT_SGBRG10P, 1,	MMAL_ENCODING_BAYER_SGBRG10P },
 	{ "SGRBG10P", V4L2_PIX_FMT_SGRBG10P, 1,	MMAL_ENCODING_BAYER_SGRBG10P },
-	{ "SRGGB10P", V4L2_PIX_FMT_SRGGB10P, 1,	MMAL_ENCODING_BAYER_SRGGB10P },
+	{ "pRAA", V4L2_PIX_FMT_SRGGB10P, 1,	MMAL_ENCODING_BAYER_SRGGB10P },
+
 	{ "SBGGR12", V4L2_PIX_FMT_SBGGR12, 1,	MMAL_ENCODING_UNUSED },
 	{ "SGBRG12", V4L2_PIX_FMT_SGBRG12, 1,	MMAL_ENCODING_UNUSED },
 	{ "SGRBG12", V4L2_PIX_FMT_SGRBG12, 1,	MMAL_ENCODING_UNUSED },
@@ -277,6 +397,8 @@ static struct v4l2_format_info {
 	{ "DV", V4L2_PIX_FMT_DV, 1,		MMAL_ENCODING_UNUSED },
 	{ "MJPEG", V4L2_PIX_FMT_MJPEG, 1,	MMAL_ENCODING_UNUSED },
 	{ "MPEG", V4L2_PIX_FMT_MPEG, 1,		MMAL_ENCODING_UNUSED },
+
+
 };
 typedef struct
 {
@@ -2118,6 +2240,20 @@ static void * runTime_thread(void *arg){
 
 int main(int argc, char *argv[])
 {
+	const rpi_hw_t *rpi_hw;
+	rpi_hw = rpi_hw_detect();
+	if(rpi_hw == NULL){
+		printf("No match to hardware version!\r\n");
+	}else{
+		int ret = rpi_hw->pFunc(rpi_hw->powerEn,0);
+    	usleep(1000*100);
+   		ret += rpi_hw->pFunc(rpi_hw->powerEn,1);
+		if(ret){
+			printf("camera poweren reset failed\r\n");
+	}
+	}
+   	
+   
     if(arducamVideoInit(&dev)){
 		printf("arducamVideoInit failed.\r\n");
 	}
