@@ -13,10 +13,11 @@ For Jetson Nano/Xavier driver, please use the [Jetvariety driver](https://github
 
 Current driver supports the following kerner version, for other kernel please send us request for adding support or source code to compile by yourself.
 * 4.19.113-v7+
+* 4.19.118+
 * 4.19.118-v7+
 * 4.19.118-v7I+
 * 5.4.42-v7+
-
+* 5.4.51+
 # Support document
 https://www.arducam.com/docs/arducam-obisp-mipi-camera-module/
 
