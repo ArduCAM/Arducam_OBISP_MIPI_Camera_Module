@@ -1095,7 +1095,7 @@ static MMAL_STATUS_T create_render_component(struct device *dev){
 		printf("unable to set preview port parameters (%u)\r\n", status);
 	}
 	status = mmal_format_full_copy(dev->render->input[0]->format, isp_output->format);
-	dev->render->input[0]->buffer_num = 3;
+	dev->render->input[0]->buffer_num = 6;
 	if (status == MMAL_SUCCESS){
 		status = mmal_port_format_commit(dev->render->input[0]);	
 		if (status != MMAL_SUCCESS)
@@ -1166,7 +1166,7 @@ static MMAL_STATUS_T create_isp_component(struct device *dev){
 	isp_input->format->es->video.crop.width = fmt.fmt.pix.width;
 	isp_input->format->es->video.crop.height = fmt.fmt.pix.height;
 	isp_input->format->es->video.width = (isp_input->format->es->video.crop.width+31) & ~31;
-	isp_input->format->es->video.height = (fmt.fmt.pix.height+15) & ~15;	
+	isp_input->format->es->video.height = fmt.fmt.pix.height;	 //for new kernel
 	isp_input->buffer_num = 3;
 
 	status = mmal_port_format_commit(isp_input);
@@ -1180,11 +1180,11 @@ static MMAL_STATUS_T create_isp_component(struct device *dev){
 		print("Failed to set zero copy\n");
 		return -1;
 	}
-
 	//isp output
 	mmal_format_copy(isp_output->format, isp_input->format);
 	isp_output->format->encoding = MMAL_ENCODING_I420;
 	dev->isp_output1Flag = 0;
+
 	if(isp_output->format->es->video.crop.width > 1920){ // use isp2 to display
 		//isp output2
 		mmal_format_copy(isp_output2->format, isp_input->format);
@@ -1740,7 +1740,8 @@ static int video_do_capture(struct device *dev)
 							buf.index, ((struct buffer*)mmal->user_data)->idx);
 					}
 					mmal->length = buf.length;	
-					//发送图像数据到ISP-INPUT[0]
+					//printf("isp_input buffer length: %d\r\n",mmal->length);
+					//发送图像数据到ISP-INPUT[0]s
  					if(dev->stopStreaming){
 						if(dev->imageName){
 							usleep(1000*1000);
@@ -1748,13 +1749,12 @@ static int video_do_capture(struct device *dev)
 							if(dev->imageName != NULL){
 									create_image_encoder_component(dev);
 								}
+								
 							status = mmal_port_send_buffer(dev->isp->input[0], mmal); 
 							if (status != MMAL_SUCCESS)
 								print("mmal_port_send_buffer failed %d\n", status);
 							while(dev->saveImageFlag){usleep(10);}
 						}
-
-
 						break;
 					}else{
 						status = mmal_port_send_buffer(dev->isp->input[0], mmal); 

@@ -895,7 +895,7 @@ static int arducam_get_regulators(struct arducam *arducam)
 }
 
 static const struct v4l2_subdev_core_ops arducam_core_ops = {
-	.s_power = arducam_s_power,
+	//.s_power = arducam_s_power,
 };
 
 static const struct v4l2_subdev_video_ops arducam_video_ops = {
