@@ -18,6 +18,8 @@ Current driver supports the following kerner version, for other kernel please se
 * 4.19.118-v7I+
 * 5.4.42-v7+
 * 5.4.51+
+* 5.4.51-v7+
+* 5.4.51-v7l+
 # Support document
 https://www.arducam.com/docs/arducam-obisp-mipi-camera-module/
 
