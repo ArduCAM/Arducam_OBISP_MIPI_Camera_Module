@@ -128,6 +128,10 @@ def parseKey(k,focuser):
         focuser.set(Focuser.OPT_FOCUS,focuser.get(Focuser.OPT_FOCUS) + focus_step)
     elif k == curses.KEY_LEFT:
         focuser.set(Focuser.OPT_FOCUS,focuser.get(Focuser.OPT_FOCUS) - focus_step)
+    elif k == 32:
+        focuser.set(Focuser.OPT_IRCUT,focuser.get(Focuser.OPT_IRCUT)^0x0001)
+        pass
+
 # Python curses example Written by Clay McLeod
 # https://gist.github.com/claymcleod/b670285f334acd56ad1c
 def draw_menu(stdscr):
