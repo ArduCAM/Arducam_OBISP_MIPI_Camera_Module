@@ -73,6 +73,13 @@ static const rpi_hw_t rpi_hw_info[] = {
         .desc = "Model 3B",
         .pFunc = write_virtual_gpio,
     },
+	   // Model 4B
+    {
+        .hwver  = 0xb03112,
+        .powerEn = 133,
+        .desc = "Model 4B",
+        .pFunc = write_virtual_gpio,
+    },
 };
 const rpi_hw_t *rpi_hw_detect(void)
 {
