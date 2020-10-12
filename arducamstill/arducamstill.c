@@ -73,6 +73,13 @@ static const rpi_hw_t rpi_hw_info[] = {
         .desc = "Model 3B",
         .pFunc = write_virtual_gpio,
     },
+	   // Model 4B
+    {
+        .hwver  = 0xb03112,
+        .powerEn = 133,
+        .desc = "Model 4B",
+        .pFunc = write_virtual_gpio,
+    },
 };
 const rpi_hw_t *rpi_hw_detect(void)
 {
@@ -1165,10 +1172,12 @@ static MMAL_STATUS_T create_isp_component(struct device *dev){
 	isp_input->format->encoding = info->mmal_encoding;
 	isp_input->format->es->video.crop.width = fmt.fmt.pix.width;
 	isp_input->format->es->video.crop.height = fmt.fmt.pix.height;
-	isp_input->format->es->video.width = (isp_input->format->es->video.crop.width+31) & ~31;
-	isp_input->format->es->video.height = fmt.fmt.pix.height;	 //for new kernel
-	isp_input->buffer_num = 3;
+	isp_input->format->es->video.width = VCOS_ALIGN_UP(isp_input->format->es->video.crop.width,32);
+	isp_input->format->es->video.height = fmt.fmt.pix.height;//for new kernel
 
+	//printf("isp_input->format->es->video.width: %d\r\n",isp_input->format->es->video.width);
+	//printf("isp_input->format->es->video.height: %d\r\n",isp_input->format->es->video.height);
+	isp_input->buffer_num = 3;
 	status = mmal_port_format_commit(isp_input);
 	if (status != MMAL_SUCCESS)
 	{
@@ -1181,8 +1190,12 @@ static MMAL_STATUS_T create_isp_component(struct device *dev){
 		return -1;
 	}
 	//isp output
-	mmal_format_copy(isp_output->format, isp_input->format);
+	//mmal_format_copy(isp_output->format, isp_input->format);
 	isp_output->format->encoding = MMAL_ENCODING_I420;
+	isp_output->format->es->video.crop.width= fmt.fmt.pix.width;
+	isp_output->format->es->video.crop.height= fmt.fmt.pix.height;
+	isp_output->format->es->video.width = VCOS_ALIGN_UP(isp_output->format->es->video.crop.width,32);
+	isp_output->format->es->video.height = VCOS_ALIGN_UP(isp_output->format->es->video.crop.height,16);
 	dev->isp_output1Flag = 0;
 
 	if(isp_output->format->es->video.crop.width > 1920){ // use isp2 to display
