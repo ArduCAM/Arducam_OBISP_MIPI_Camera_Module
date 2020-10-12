@@ -1,5 +1,4 @@
 #!/bin/bash
-# load i2c-dev moudle
 echo "--------------------------------------"
 echo "Enable i2c0 adapter..."
 echo "--------------------------------------"
