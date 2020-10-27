@@ -380,10 +380,10 @@ static struct v4l2_format_info {
 	{ "YVU420M", V4L2_PIX_FMT_YVU420M, 3,	MMAL_ENCODING_UNUSED },
 	{ "YVU422M", V4L2_PIX_FMT_YVU422M, 3,	MMAL_ENCODING_UNUSED },
 	{ "YVU444M", V4L2_PIX_FMT_YVU444M, 3,	MMAL_ENCODING_UNUSED },
-	{ "SBGGR8", V4L2_PIX_FMT_SBGGR8, 1,	MMAL_ENCODING_BAYER_SBGGR8 },
-	{ "SGBRG8", V4L2_PIX_FMT_SGBRG8, 1,	MMAL_ENCODING_BAYER_SGBRG8 },
-	{ "SGRBG8", V4L2_PIX_FMT_SGRBG8, 1,	MMAL_ENCODING_BAYER_SGRBG8 },
-	{ "SRGGB8", V4L2_PIX_FMT_SRGGB8, 1,	MMAL_ENCODING_BAYER_SRGGB8 },
+	{ "BGGR", V4L2_PIX_FMT_SBGGR8, 1,	MMAL_ENCODING_BAYER_SBGGR8 },
+	{ "GBRG", V4L2_PIX_FMT_SGBRG8, 1,	MMAL_ENCODING_BAYER_SGBRG8 },
+	{ "GRBG", V4L2_PIX_FMT_SGRBG8, 1,	MMAL_ENCODING_BAYER_SGRBG8 },
+	{ "RGGB", V4L2_PIX_FMT_SRGGB8, 1,	MMAL_ENCODING_BAYER_SRGGB8 },
 	{ "SBGGR10_DPCM8", V4L2_PIX_FMT_SBGGR10DPCM8, 1,	MMAL_ENCODING_UNUSED },
 	{ "SGBRG10_DPCM8", V4L2_PIX_FMT_SGBRG10DPCM8, 1,	MMAL_ENCODING_UNUSED },
 	{ "SGRBG10_DPCM8", V4L2_PIX_FMT_SGRBG10DPCM8, 1,	MMAL_ENCODING_UNUSED },
@@ -392,9 +392,9 @@ static struct v4l2_format_info {
 	{ "SGBRG10", V4L2_PIX_FMT_SGBRG10, 1,	MMAL_ENCODING_UNUSED },
 	{ "SGRBG10", V4L2_PIX_FMT_SGRBG10, 1,	MMAL_ENCODING_UNUSED },
 	{ "SRGGB10", V4L2_PIX_FMT_SRGGB10, 1,	MMAL_ENCODING_UNUSED },
-	{ "SBGGR10P", V4L2_PIX_FMT_SBGGR10P, 1,	MMAL_ENCODING_BAYER_SBGGR10P },
-	{ "SGBRG10P", V4L2_PIX_FMT_SGBRG10P, 1,	MMAL_ENCODING_BAYER_SGBRG10P },
-	{ "SGRBG10P", V4L2_PIX_FMT_SGRBG10P, 1,	MMAL_ENCODING_BAYER_SGRBG10P },
+	{ "pBAA", V4L2_PIX_FMT_SBGGR10P, 1,	MMAL_ENCODING_BAYER_SBGGR10P },
+	{ "pGAA", V4L2_PIX_FMT_SGBRG10P, 1,	MMAL_ENCODING_BAYER_SGBRG10P },
+	{ "pgAA", V4L2_PIX_FMT_SGRBG10P, 1,	MMAL_ENCODING_BAYER_SGRBG10P },
 	{ "pRAA", V4L2_PIX_FMT_SRGGB10P, 1,	MMAL_ENCODING_BAYER_SRGGB10P },
 
 	{ "SBGGR12", V4L2_PIX_FMT_SBGGR12, 1,	MMAL_ENCODING_UNUSED },
@@ -1172,10 +1172,12 @@ static MMAL_STATUS_T create_isp_component(struct device *dev){
 	isp_input->format->encoding = info->mmal_encoding;
 	isp_input->format->es->video.crop.width = fmt.fmt.pix.width;
 	isp_input->format->es->video.crop.height = fmt.fmt.pix.height;
-	isp_input->format->es->video.width = (isp_input->format->es->video.crop.width+31) & ~31;
-	isp_input->format->es->video.height = fmt.fmt.pix.height;	 //for new kernel
-	isp_input->buffer_num = 3;
+	isp_input->format->es->video.width = VCOS_ALIGN_UP(isp_input->format->es->video.crop.width,32);
+	isp_input->format->es->video.height = fmt.fmt.pix.height;//for new kernel
 
+	//printf("isp_input->format->es->video.width: %d\r\n",isp_input->format->es->video.width);
+	//printf("isp_input->format->es->video.height: %d\r\n",isp_input->format->es->video.height);
+	isp_input->buffer_num = 3;
 	status = mmal_port_format_commit(isp_input);
 	if (status != MMAL_SUCCESS)
 	{
@@ -1188,8 +1190,12 @@ static MMAL_STATUS_T create_isp_component(struct device *dev){
 		return -1;
 	}
 	//isp output
-	mmal_format_copy(isp_output->format, isp_input->format);
+	//mmal_format_copy(isp_output->format, isp_input->format);
 	isp_output->format->encoding = MMAL_ENCODING_I420;
+	isp_output->format->es->video.crop.width= fmt.fmt.pix.width;
+	isp_output->format->es->video.crop.height= fmt.fmt.pix.height;
+	isp_output->format->es->video.width = VCOS_ALIGN_UP(isp_output->format->es->video.crop.width,32);
+	isp_output->format->es->video.height = VCOS_ALIGN_UP(isp_output->format->es->video.crop.height,16);
 	dev->isp_output1Flag = 0;
 
 	if(isp_output->format->es->video.crop.width > 1920){ // use isp2 to display
