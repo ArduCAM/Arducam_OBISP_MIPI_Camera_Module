@@ -528,7 +528,9 @@ struct v4l2_format_info *v4l2_format_by_name(char *name)
 	unsigned int i;
 
 	for (i = 0; i < ARRAY_SIZE(pixel_formats); ++i) {
-		if (strcasecmp(pixel_formats[i].name, name) == 0)
+		
+//if (strcasecmp(pixel_formats[i].name, name) == 0)
+if (strcmp(pixel_formats[i].name, name) == 0)
 			return &pixel_formats[i];
 	}
 
