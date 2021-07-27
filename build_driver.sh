@@ -1,5 +1,6 @@
 #!/bin/bash
 
+CURRENT_DIR=$(pwd)
 echo "Running system update..."
 echo "----------------------------------------------------------------------------------------"
 sudo apt update -y
@@ -18,6 +19,8 @@ ROOT_PATH="${HOME}/Arducam"
 [ "$(ls -A ${ROOT_PATH})" ] && echo -e "\033[31m'${ROOT_PATH}' already exists and is not empty. Please change 'ROOT_PATH' in the script to select another directory.\033[0m"
 
 [ -d ${ROOT_PATH} ] && echo "Directory ${ROOT_PATH} exists and is empty. Continuing..." || mkdir ${ROOT_PATH}
+
+exit
 
 cd ${ROOT_PATH}
 
@@ -220,3 +223,31 @@ fi
 
 echo ""
 echo "Driver built successfully and saved in '${ROOT_PATH}/${DRIVER_COPY_DIR}'"
+
+echo "----------------------------------------------------------------------------------------"
+
+# echo -e "\033[33mHow To Use the Newly Compiled Driver:"
+# echo "  -  check the exact kernel version in your Pi with command 'uname -r'"
+# echo "  -  create a directory with exactly the same version name in Arducam_OBISP_MIPI_Camera_Module/Release/bin/"
+# echo "  -  copy arducam.dtbo and arducam.ko from '${ROOT_PATH}/${DRIVER_COPY_DIR}' into the newly created directory"
+# echo -e "  -  Now you can copy the project Arducam_OBISP_MIPI_Camera_Module into your Pi and run 'install_driver.sh' from Arducam_OBISP_MIPI_Camera_Module/Release directory.\033[0m"
+
+KERNEL_VERSION=$(head -n 1 linux/include/config/kernel.release)
+DRIVER_COPY_PATH="${CURRENT_DIR}/Release/bin/${KERNEL_VERSION}"
+
+[ "$(ls -A ${DRIVER_COPY_PATH})" ] && echo "'${DRIVER_COPY_PATH}' already exists and is not empty."
+[ -d ${DRIVER_COPY_PATH} ] && echo "Directory ${DRIVER_COPY_PATH} exists. Copying driver files..." || mkdir ${DRIVER_COPY_PATH}
+
+echo "Copying driver files into ${DRIVER_COPY_PATH}"
+cp linux/drivers/media/i2c/arducam.ko ${DRIVER_COPY_PATH}
+cp linux/arch/arm/boot/dts/overlays/arducam.dtbo ${DRIVER_COPY_PATH}
+
+if [ $? -eq 0 ]; then
+	echo "Done !!"
+else
+	echo "error copying driver files into '${DRIVER_COPY_PATH}'"
+	exit 1
+fi
+
+cd $CURRENT_DIR
+echo -e "\033[32mNow you can copy the project Arducam_OBISP_MIPI_Camera_Module into your Pi and run 'install_driver.sh' from Arducam_OBISP_MIPI_Camera_Module/Release directory.\033[0m"
