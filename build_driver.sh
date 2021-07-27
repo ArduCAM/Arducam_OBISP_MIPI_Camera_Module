@@ -7,7 +7,7 @@ sudo apt update -y
 echo "----------------------------------------------------------------------------------------"
 echo "Installing crossbuild tools..."
 echo "----------------------------------------------------------------------------------------"
-sudo apt install crossbuild-essential-arm64 git flex bison -y
+sudo apt install crossbuild-essential-arm64 libssl-dev git flex bison -y
 sudo apt-get install gcc-arm* -y
 
 echo -e "\033[33m A directory named 'Arducam' will be created in your home directory. If you want to change the download path, cancel the process and change the ROOT_PATH variable in the script. \033[0m"
@@ -75,7 +75,9 @@ fi
 echo "----------------------------------------------------------------------------------------"
 echo "Adding rpi tools binary to PATH variable in ~/.bashrc ..."
 echo "----------------------------------------------------------------------------------------"
-echo "export PATH=$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )/RpiTools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/bin:\$PATH" >> ~/.bashrc
+
+grep -qxF "export PATH=$(pwd)/RpiTools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/bin:\$PATH" ~/.bashrc || echo \
+"export PATH=$(pwd)/RpiTools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/bin:\$PATH" >> ~/.bashrc
 
 if [ $? -eq 0 ]; then
 	echo "Done !!"
@@ -185,7 +187,7 @@ fi
 echo "----------------------------------------------------------------------------------------"
 echo "Starting the build process..."
 
-CPU_COUNT=$(grep ^cpu\\scores /proc/cpuinfo | uniq |  awk '{print $4}')
+CPU_COUNT=$(grep -c ^processor /proc/cpuinfo)
 
 make -j ${CPU_COUNT} ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- zImage modules dtbs -j8
 
