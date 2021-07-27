@@ -19,3 +19,7 @@ https://www.arducam.com/docs/arducam-obisp-mipi-camera-module/
 
 # Video Demo
 https://youtu.be/MlRbOJ9n3Q4
+
+
+# Build driver for your kernel version
+bash build_driver.sh
