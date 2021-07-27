@@ -21,5 +21,8 @@ https://www.arducam.com/docs/arducam-obisp-mipi-camera-module/
 https://youtu.be/MlRbOJ9n3Q4
 
 
-# Build driver for your kernel version
-bash build_driver.sh
+# Build driver for other kernel versions (RaspberryPi)
+Tested in ubuntu 16.04, 18.04 and 20.04
+Run the following command and follow the instructions
+
+* bash build_driver.sh
