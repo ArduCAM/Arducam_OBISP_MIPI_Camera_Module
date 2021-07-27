@@ -7,7 +7,7 @@ sudo apt update -y
 echo "----------------------------------------------------------------------------------------"
 echo "Installing crossbuild tools..."
 echo "----------------------------------------------------------------------------------------"
-sudo apt install crossbuild-essential-arm64 git -y
+sudo apt install crossbuild-essential-arm64 git flex bison -y
 sudo apt-get install gcc-arm* -y
 
 echo -e "\033[33m A directory named 'Arducam' will be created in your home directory. If you want to change the download path, cancel the process and change the ROOT_PATH variable in the script. \033[0m"
@@ -25,7 +25,7 @@ if [ $? -eq 0 ]; then
 	echo "Done !!"
 else
 	echo "error creating directory '${ROOT_PATH}'"
-	return
+	exit 1
 fi
 
 
@@ -42,7 +42,7 @@ if [ $? -eq 0 ]; then
 	echo "Done !!"
 else
 	echo "error while cloning linux kernel"
-	return
+	exit 1
 fi
 
 
@@ -56,7 +56,7 @@ if [ $? -eq 0 ]; then
 	echo "Done !!"
 else
 	echo "error while cloning camera driver source"
-	return
+	exit 1
 fi
 
 echo "----------------------------------------------------------------------------------------"
@@ -69,7 +69,7 @@ if [ $? -eq 0 ]; then
 	echo "Done !!"
 else
 	echo "error while cloning complire tools for raspberry pi"
-	return
+	exit 1
 fi
 
 echo "----------------------------------------------------------------------------------------"
@@ -81,7 +81,7 @@ if [ $? -eq 0 ]; then
 	echo "Done !!"
 else
 	echo "error adding PATH to ~/.bashrc"
-	return
+	exit 1
 fi
 
 source ~/.bashrc
@@ -90,7 +90,7 @@ if [ $? -eq 0 ]; then
 	echo "Done !!"
 else
 	echo "error sourcing ~/.bashrc"
-	return
+	exit 1
 fi
 
 echo "----------------------------------------------------------------------------------------"
@@ -102,7 +102,7 @@ if [ $? -eq 0 ]; then
 	echo "Done !!"
 else
 	echo "error copying source code and header files of camera to linux kernel"
-	return
+	exit 1
 fi
 
 echo "----------------------------------------------------------------------------------------"
@@ -114,7 +114,7 @@ if [ $? -eq 0 ]; then
 	echo "Done !!"
 else
 	echo "error copying device tree file to linux kernel"
-	return
+	exit 1
 fi
 
 echo "----------------------------------------------------------------------------------------"
@@ -129,7 +129,7 @@ if [ $? -eq 0 ]; then
 	echo "Done !!"
 else
 	echo "error while updating Makefile"
-	return
+	exit 1
 fi
 
 echo "----------------------------------------------------------------------------------------"
@@ -144,7 +144,7 @@ if [ $? -eq 0 ]; then
 	echo "Done !!"
 else
 	echo "error while updating Makefile"
-	return
+	exit 1
 fi
 
 echo "----------------------------------------------------------------------------------------"
@@ -159,7 +159,7 @@ if [ $? -eq 0 ]; then
 	echo "Done !!"
 else
 	echo "error while updating Kconfig"
-	return
+	exit 1
 fi
 
 
@@ -179,7 +179,7 @@ if [ $? -eq 0 ]; then
 	echo "Done !!"
 else
 	echo "error while setting configuration for build"
-	return
+	exit 1
 fi
 
 echo "----------------------------------------------------------------------------------------"
@@ -193,7 +193,7 @@ if [ $? -eq 0 ]; then
 	echo "Done !!"
 else
 	echo "error in build"
-	return
+	exit 1
 fi
 echo "Build process complete"
 
@@ -212,9 +212,9 @@ cp linux/arch/arm/boot/dts/overlays/arducam.dtbo ${DRIVER_COPY_DIR}
 if [ $? -eq 0 ]; then
 	echo "Done !!"
 else
-	echo "error copying compiled driver files into '${DRIVER_COPY_DIR}'. Please copy the files 'linux/drivers/media/i2c/arducam.ko' and 'linux/arch/arm/boot/dts/overlays/arducam.dtbo' on your own."
-	return
+	echo "error copying compiled driver files into '${ROOT_PATH}/${DRIVER_COPY_DIR}'. Please copy the files 'linux/drivers/media/i2c/arducam.ko' and 'linux/arch/arm/boot/dts/overlays/arducam.dtbo' on your own."
+	exit 1
 fi
 
 echo ""
-echo "Driver built successfully and saved in '${DRIVER_COPY_DIR}'"
+echo "Driver built successfully and saved in '${ROOT_PATH}/${DRIVER_COPY_DIR}'"
