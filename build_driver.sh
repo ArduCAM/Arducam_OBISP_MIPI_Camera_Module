@@ -20,7 +20,6 @@ ROOT_PATH="${HOME}/Arducam"
 
 [ -d ${ROOT_PATH} ] && echo "Directory ${ROOT_PATH} exists and is empty. Continuing..." || mkdir ${ROOT_PATH}
 
-exit
 
 cd ${ROOT_PATH}
 
