@@ -292,7 +292,7 @@ static int arducam_write_reg(struct arducam *arducam, u16 reg, u32 len, u32 val)
 		return -EINVAL;
 
 	put_unaligned_be16(reg, buf);
-	put_unaligned_be32(val << (8 * (4 - len)), buf + 2);
+	put_unaligned_be32(val << (8 * (4 - len)), buf   + 2);
 	if (i2c_master_send(client, buf, len + 2) != len + 2)
 		return -EIO;
 
