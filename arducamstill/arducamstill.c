@@ -1428,7 +1428,7 @@ return 0;
 static MMAL_STATUS_T create_video_encoder_component(struct device *dev)
 {
 	MMAL_STATUS_T status;
-	MMAL_PORT_T  *isp_output = dev->isp->output[1];
+	MMAL_PORT_T  *isp_output = dev->isp->output[1];  //for the video encoder, we use isp output 1
 	MMAL_PORT_T *encoder_input = NULL, *encoder_output = NULL;	
 	VCOS_STATUS_T vcos_status;
 	// Max bitrate we allow for recording
