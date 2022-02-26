@@ -82,7 +82,7 @@ echo "--------------------------------------------------------------------------
 echo "Running"
 if [ -d linux ]; then
 	echo "Repo exists.  Reverting..."
-	git -C linux reset --hard HEAD --continue
+	git -C linux reset --hard HEAD
 else
 	git clone --depth=1 -b $select_linux_kernel_branch --single-branch https://github.com/raspberrypi/linux.git
 fi
