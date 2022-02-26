@@ -1,6 +1,6 @@
 #!/bin/bash
+set -x
 
-CURRENT_DIR=$(pwd)
 echo "Running system update..."
 echo "----------------------------------------------------------------------------------------"
 sudo apt update -y
@@ -26,10 +26,8 @@ echo "--------------------------------------------------------------------------
 echo "Installing compiler tools for ${ARCH}..."
 echo "----------------------------------------------------------------------------------------"
 if [ "${bit_selection}" = "1" ]; then
-	echo "sudo apt-get install gcc-arm-linux-gnueabihf"
 	sudo apt-get install gcc-arm-linux-gnueabihf
 else
-	echo "sudo apt-get install gcc-aarch64-linux-gnu"
 	apt-get install gcc-aarch64-linux-gnu
 fi
 
@@ -46,17 +44,20 @@ echo "--------------------------------------------------------------------------
 sudo apt install crossbuild-essential-arm64 libssl-dev git flex bison -y
 sudo apt-get install gcc-arm* -y
 
-echo -e "\033[33m A directory named 'Arducam' will be created in your home directory. If you want to change the download path, cancel the process and change the ROOT_PATH variable in the script. \033[0m"
+echo "----------------------------------------------------------------------------------------"
+ROOT_PATH= ${ROOT_PATH:-"${HOME}/Arducam"}
+echo -e "\033[33m A directory named '${ROOT_PATH}' will be created. If you want to change the download path, cancel the process and export the ROOT_PATH variable. \033[0m"
 read -p "Press any key to continue..."
 
-ROOT_PATH="${HOME}/Arducam"
 
-[ "$(ls -A ${ROOT_PATH})" ] && echo -e "\033[31m'${ROOT_PATH}' already exists and is not empty. Please change 'ROOT_PATH' in the script to select another directory.\033[0m"
+if [ "$(ls -A ${ROOT_PATH})" ]; then
+	echo -e "\033[31m'${ROOT_PATH}' already exists and is not empty.  The build may not work properly. \033[0m"
+	read -p "Press any key to continue..."
 
 [ -d ${ROOT_PATH} ] && echo "Directory ${ROOT_PATH} exists and is empty. Continuing..." || mkdir ${ROOT_PATH}
 
 
-cd ${ROOT_PATH}
+pushd ${ROOT_PATH}
 
 if [ $? -eq 0 ]; then
 	echo "Done !!"
@@ -73,8 +74,13 @@ read -p "branch [default: rpi-5.10.y]: " select_linux_kernel_branch
 select_linux_kernel_branch=${select_linux_kernel_branch:-rpi-5.10.y}
 echo "----------------------------------------------------------------------------------------"
 echo "Running"
-echo "git clone --depth=1 -b ${select_linux_kernel_branch} --single-branch https://github.com/raspberrypi/linux.git"
-git clone --depth=1 -b $select_linux_kernel_branch --single-branch https://github.com/raspberrypi/linux.git
+if [ -d linux ]; then
+	echo "Repo exists.  Reverting..."
+	git -C linux reset --hard HEAD --continue
+else
+	echo "git clone --depth=1 -b ${select_linux_kernel_branch} --single-branch https://github.com/raspberrypi/linux.git"
+	git clone --depth=1 -b $select_linux_kernel_branch --single-branch https://github.com/raspberrypi/linux.git
+fi
 
 if [ $? -eq 0 ]; then
 	echo "Done !!"
@@ -87,38 +93,19 @@ fi
 echo "----------------------------------------------------------------------------------------"
 echo "Cloning camera driver source..."
 echo "----------------------------------------------------------------------------------------"
-echo "git clone https://github.com/ArduCAM/Arducam_OBISP_MIPI_Camera_Module.git"
-git clone https://github.com/ArduCAM/Arducam_OBISP_MIPI_Camera_Module.git
-
+if [ -d linux ]; then
+	echo "Repo exists.  Reverting..."
+	git -C Arducam_OBISP_MIPI_Camera_Module reset --hard HEAD --continue
+else
+	git clone https://github.com/ArduCAM/Arducam_OBISP_MIPI_Camera_Module.git
+fi
+	
 if [ $? -eq 0 ]; then
 	echo "Done !!"
 else
 	echo "error while cloning camera driver source"
 	exit 1
 fi
-
-# echo "----------------------------------------------------------------------------------------"
-# echo "Adding rpi tools binary to PATH variable in ~/.bashrc ..."
-# echo "----------------------------------------------------------------------------------------"
-
-# grep -qxF "export PATH=$(pwd)/RpiTools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/bin:\$PATH" ~/.bashrc || echo \
-# "export PATH=$(pwd)/RpiTools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/bin:\$PATH" >> ~/.bashrc
-
-# if [ $? -eq 0 ]; then
-# 	echo "Done !!"
-# else
-# 	echo "error adding PATH to ~/.bashrc"
-# 	exit 1
-# fi
-
-# source ~/.bashrc
-
-# if [ $? -eq 0 ]; then
-# 	echo "Done !!"
-# else
-# 	echo "error sourcing ~/.bashrc"
-# 	exit 1
-# fi
 
 echo "----------------------------------------------------------------------------------------"
 echo "Copying header and source code of camera driver to linux kernel..."
@@ -199,7 +186,7 @@ if [ "${bit_selection}" -eq 1 ]; then
 else
 	cross_compiler= "aarch64-linux-gnu"
 fi
-cd linux
+pushd linux
 KERNEL=kernel7l
 make ARCH=${ARCH} CROSS_COMPILE=${cross_compiler}- bcm2711_defconfig
 
@@ -216,11 +203,9 @@ else
 fi
 
 echo "----------------------------------------------------------------------------------------"
-echo "Starting the build process..."
-
 CPU_COUNT=$(grep -c ^processor /proc/cpuinfo)
-
-make -j ${CPU_COUNT} ARCH=${ARCH} CROSS_COMPILE=${cross_compiler}- zImage modules dtbs -j8
+echo "Starting the build process with ${CPU_COUNT} cores..."
+make -j ${CPU_COUNT} ARCH=${ARCH} CROSS_COMPILE=${cross_compiler}- zImage modules dtbs
 
 if [ $? -eq 0 ]; then
 	echo "Done !!"
@@ -231,13 +216,11 @@ fi
 echo "Build process complete"
 
 echo "----------------------------------------------------------------------------------------"
+popd
 
-cd ..
-DRIVER_COPY_DIR="driver_${select_linux_kernel_branch}"
-
+DRIVER_COPY_DIR="Arducam_OBISP_MIPI_Camera_Module/Release/bin/${select_linux_kernel_branch}"
 echo "Copying compiled driver into ${DRIVER_COPY_DIR}"
-
-mkdir ${DRIVER_COPY_DIR}
+[ -d ${DRIVER_COPY_DIR} ] || mkdir ${DRIVER_COPY_DIR}
 
 cp linux/drivers/media/i2c/arducam.ko ${DRIVER_COPY_DIR}
 cp linux/arch/${ARCH}/boot/dts/overlays/arducam.dtbo ${DRIVER_COPY_DIR}
@@ -245,37 +228,14 @@ cp linux/arch/${ARCH}/boot/dts/overlays/arducam.dtbo ${DRIVER_COPY_DIR}
 if [ $? -eq 0 ]; then
 	echo "Done !!"
 else
-	echo "error copying compiled driver files into '${ROOT_PATH}/${DRIVER_COPY_DIR}'. Please copy the files 'linux/drivers/media/i2c/arducam.ko' and 'linux/arch/${ARCH}/boot/dts/overlays/arducam.dtbo' on your own."
+	echo "error copying compiled driver files into '${DRIVER_COPY_DIR}'. Please copy the files 'linux/drivers/media/i2c/arducam.ko' and 'linux/arch/${ARCH}/boot/dts/overlays/arducam.dtbo' on your own."
 	exit 1
 fi
 
 echo ""
-echo "Driver built successfully and saved in '${ROOT_PATH}/${DRIVER_COPY_DIR}'"
+echo "Driver built successfully and saved in '${DRIVER_COPY_DIR}'"
 
 echo "----------------------------------------------------------------------------------------"
-
-# echo -e "\033[33mHow To Use the Newly Compiled Driver:"
-# echo "  -  check the exact kernel version in your Pi with command 'uname -r'"
-# echo "  -  create a directory with exactly the same version name in Arducam_OBISP_MIPI_Camera_Module/Release/bin/"
-# echo "  -  copy arducam.dtbo and arducam.ko from '${ROOT_PATH}/${DRIVER_COPY_DIR}' into the newly created directory"
-# echo -e "  -  Now you can copy the project Arducam_OBISP_MIPI_Camera_Module into your Pi and run 'install_driver.sh' from Arducam_OBISP_MIPI_Camera_Module/Release directory.\033[0m"
-
-KERNEL_VERSION=$(head -n 1 linux/include/config/kernel.release)
-DRIVER_COPY_PATH="${CURRENT_DIR}/Release/bin/${KERNEL_VERSION}"
-
-[ "$(ls -A ${DRIVER_COPY_PATH})" ] && echo "'${DRIVER_COPY_PATH}' already exists and is not empty."
-[ -d ${DRIVER_COPY_PATH} ] && echo "Directory ${DRIVER_COPY_PATH} exists. Copying driver files..." || mkdir ${DRIVER_COPY_PATH}
-
-echo "Copying driver files into ${DRIVER_COPY_PATH}"
-cp linux/drivers/media/i2c/arducam.ko ${DRIVER_COPY_PATH}
-cp linux/arch/${ARCH}/boot/dts/overlays/arducam.dtbo ${DRIVER_COPY_PATH}
-
-if [ $? -eq 0 ]; then
-	echo "Done !!"
-else
-	echo "error copying driver files into '${DRIVER_COPY_PATH}'"
-	exit 1
-fi
-
-cd $CURRENT_DIR
 echo -e "\033[32mNow you can copy the project Arducam_OBISP_MIPI_Camera_Module into your Pi and run 'install_driver.sh' from Arducam_OBISP_MIPI_Camera_Module/Release directory.\033[0m"
+
+popd
