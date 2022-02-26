@@ -4,6 +4,41 @@ CURRENT_DIR=$(pwd)
 echo "Running system update..."
 echo "----------------------------------------------------------------------------------------"
 sudo apt update -y
+if [ $? -eq 0 ]; then
+	echo "Updated."
+else
+	echo "This script is designed to work on the Ubuntu/Debian Linux family."
+	exit 1
+fi
+
+echo "----------------------------------------------------------------------------------------"
+echo "Select:"
+echo "	1. 32 bit (arm)"
+echo "	2. 64 bit (arm64)"
+read -p "Select: " bit_selection
+if [ "${bit_selection}" = "1" ]; then
+	arch= "arm"
+else
+	arch= "arm64"
+fi
+
+echo "----------------------------------------------------------------------------------------"
+echo "Installing compiler tools for ${arch}..."
+echo "----------------------------------------------------------------------------------------"
+if [ "${bit_selection}" = "1" ]; then
+	echo "sudo apt-get install gcc-arm-linux-gnueabihf"
+	sudo apt-get install gcc-arm-linux-gnueabihf
+else
+	echo "sudo apt-get install gcc-aarch64-linux-gnu"
+	apt-get install gcc-aarch64-linux-gnu
+fi
+
+if [ $? -eq 0 ]; then
+	echo "Done !!"
+else
+	echo "error installing compiler tools"
+	exit 1
+fi
 
 echo "----------------------------------------------------------------------------------------"
 echo "Installing crossbuild tools..."
@@ -34,11 +69,12 @@ fi
 echo "----------------------------------------------------------------------------------------"
 echo "Input the branch name of linux kernel that you want to build the driver for"
 echo "(Refer to https://github.com/raspberrypi/linux.git and select the correct branch)"
-read -p "branch (example: rpi-5.4.y): " select_linux_kernel_branch
+read -p "branch [default: rpi-5.10.y]: " select_linux_kernel_branch
+select_linux_kernel_branch=${select_linux_kernel_branch:-rpi-5.10.y}
 echo "----------------------------------------------------------------------------------------"
 echo "Running"
-echo "git clone -b ${select_linux_kernel_branch} --single-branch https://github.com/raspberrypi/linux.git"
-git clone -b $select_linux_kernel_branch --single-branch https://github.com/raspberrypi/linux.git
+echo "git clone --depth=1 -b ${select_linux_kernel_branch} --single-branch https://github.com/raspberrypi/linux.git"
+git clone --depth=1 -b $select_linux_kernel_branch --single-branch https://github.com/raspberrypi/linux.git
 
 if [ $? -eq 0 ]; then
 	echo "Done !!"
@@ -61,45 +97,33 @@ else
 	exit 1
 fi
 
-echo "----------------------------------------------------------------------------------------"
-echo "Cloning compile tools for raspberry pi..."
-echo "----------------------------------------------------------------------------------------"
-echo "git clone git://github.com/raspberrypi/tools.git RpiTools"
-git clone git://github.com/raspberrypi/tools.git RpiTools
+# echo "----------------------------------------------------------------------------------------"
+# echo "Adding rpi tools binary to PATH variable in ~/.bashrc ..."
+# echo "----------------------------------------------------------------------------------------"
 
-if [ $? -eq 0 ]; then
-	echo "Done !!"
-else
-	echo "error while cloning complire tools for raspberry pi"
-	exit 1
-fi
+# grep -qxF "export PATH=$(pwd)/RpiTools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/bin:\$PATH" ~/.bashrc || echo \
+# "export PATH=$(pwd)/RpiTools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/bin:\$PATH" >> ~/.bashrc
 
-echo "----------------------------------------------------------------------------------------"
-echo "Adding rpi tools binary to PATH variable in ~/.bashrc ..."
-echo "----------------------------------------------------------------------------------------"
+# if [ $? -eq 0 ]; then
+# 	echo "Done !!"
+# else
+# 	echo "error adding PATH to ~/.bashrc"
+# 	exit 1
+# fi
 
-grep -qxF "export PATH=$(pwd)/RpiTools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/bin:\$PATH" ~/.bashrc || echo \
-"export PATH=$(pwd)/RpiTools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/bin:\$PATH" >> ~/.bashrc
+# source ~/.bashrc
 
-if [ $? -eq 0 ]; then
-	echo "Done !!"
-else
-	echo "error adding PATH to ~/.bashrc"
-	exit 1
-fi
-
-source ~/.bashrc
-
-if [ $? -eq 0 ]; then
-	echo "Done !!"
-else
-	echo "error sourcing ~/.bashrc"
-	exit 1
-fi
+# if [ $? -eq 0 ]; then
+# 	echo "Done !!"
+# else
+# 	echo "error sourcing ~/.bashrc"
+# 	exit 1
+# fi
 
 echo "----------------------------------------------------------------------------------------"
 echo "Copying header and source code of camera driver to linux kernel..."
 echo "----------------------------------------------------------------------------------------"
+echo "cp Arducam_OBISP_MIPI_Camera_Module/sourceCode/arducam.c Arducam_OBISP_MIPI_Camera_Module/sourceCode/arducam.h linux/drivers/media/i2c/"
 cp Arducam_OBISP_MIPI_Camera_Module/sourceCode/arducam.c Arducam_OBISP_MIPI_Camera_Module/sourceCode/arducam.h linux/drivers/media/i2c/
 
 if [ $? -eq 0 ]; then
@@ -112,7 +136,8 @@ fi
 echo "----------------------------------------------------------------------------------------"
 echo "Copying device tree file of camera driver to linux kernel..."
 echo "----------------------------------------------------------------------------------------"
-cp Arducam_OBISP_MIPI_Camera_Module/sourceCode/dts/arducam-overlay.dts linux/arch/arm/boot/dts/overlays/
+echo "cp Arducam_OBISP_MIPI_Camera_Module/sourceCode/dts/arducam-overlay.dts linux/arch/${arch}/boot/dts/overlays/"
+cp Arducam_OBISP_MIPI_Camera_Module/sourceCode/dts/arducam-overlay.dts linux/arch/${arch}/boot/dts/overlays/
 
 if [ $? -eq 0 ]; then
 	echo "Done !!"
@@ -137,7 +162,7 @@ else
 fi
 
 echo "----------------------------------------------------------------------------------------"
-device_tree_makefile_path="linux/arch/arm/boot/dts/overlays/Makefile"
+device_tree_makefile_path="linux/arch/${arch}/boot/dts/overlays/Makefile"
 echo "Updating Makefile at location '${device_tree_makefile_path}'"
 TO_APPEND="\\\tarducam.dtbo \\\\"
 TO_FIND="imx219.dtbo"
@@ -169,10 +194,14 @@ fi
 
 echo "----------------------------------------------------------------------------------------"
 echo "Setting configurations for build..."
-
+if [ "${bit_selection}" -eq 1 ]; then
+	cross_compiler= "arm-linux-gnueabihf"
+else
+	cross_compiler= "aarch64-linux-gnu"
+fi
 cd linux
 KERNEL=kernel7l
-make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- bcm2711_defconfig
+make ARCH=${arch} CROSS_COMPILE=${cross_compiler}- bcm2711_defconfig
 
 TO_FIND="CONFIG_VIDEO_ARDUCAM"
 TO_REPLACE="CONFIG_VIDEO_ARDUCAM=m"
@@ -191,7 +220,7 @@ echo "Starting the build process..."
 
 CPU_COUNT=$(grep -c ^processor /proc/cpuinfo)
 
-make -j ${CPU_COUNT} ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- zImage modules dtbs -j8
+make -j ${CPU_COUNT} ARCH=${arch} CROSS_COMPILE=${cross_compiler}- zImage modules dtbs -j8
 
 if [ $? -eq 0 ]; then
 	echo "Done !!"
