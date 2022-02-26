@@ -1,6 +1,11 @@
 #!/bin/bash
 set -x
 
+if [ ! ${HOME} ]; then
+	echo "No home directory."
+	exit 1
+fi
+
 echo "Running system update..."
 echo "----------------------------------------------------------------------------------------"
 sudo apt update -y
@@ -12,20 +17,21 @@ else
 fi
 
 echo "----------------------------------------------------------------------------------------"
-echo "Select:"
+echo "Select architecture:"
 echo "	1. 32 bit (arm)"
 echo "	2. 64 bit (arm64)"
-read -p "Select: " bit_selection
-if [ "${bit_selection}" = "1" ]; then
-	ARCH= "arm"
+read -p ": " bit_selection
+if [ "${bit_selection}" -eq 1 ]; then
+	ARCH="arm"
 else
-	ARCH= "arm64"
+	ARCH="arm64"
 fi
+echo "${ARCH} selected."
 
 echo "----------------------------------------------------------------------------------------"
 echo "Installing compiler tools for ${ARCH}..."
 echo "----------------------------------------------------------------------------------------"
-if [ "${bit_selection}" = "1" ]; then
+if [ ${bit_selection} -eq 1 ]; then
 	sudo apt-get install gcc-arm-linux-gnueabihf
 else
 	apt-get install gcc-aarch64-linux-gnu
@@ -45,10 +51,10 @@ sudo apt install crossbuild-essential-arm64 libssl-dev git flex bison -y
 sudo apt-get install gcc-arm* -y
 
 echo "----------------------------------------------------------------------------------------"
-DEFAULT_ROOT_PATH= "${HOME}/Arducam"
+DEFAULT_ROOT_PATH=${HOME}/Arducam
 echo -e "\033[33m Enter a working directory. \033[0m"
 read -p "[default: ${DEFAULT_ROOT_PATH}]: " ROOT_PATH
-ROOT_PATH= ${ROOT_PATH:--"${HOME}/Arducam"}
+ROOT_PATH=${ROOT_PATH:-${DEFAULT_ROOT_PATH}}
 
 if [ "$(ls -A ${ROOT_PATH})" ]; then
 	echo -e "\033[31m'${ROOT_PATH}' already exists and is not empty.  The build may not work properly. \033[0m"
@@ -78,7 +84,6 @@ if [ -d linux ]; then
 	echo "Repo exists.  Reverting..."
 	git -C linux reset --hard HEAD --continue
 else
-	echo "git clone --depth=1 -b ${select_linux_kernel_branch} --single-branch https://github.com/raspberrypi/linux.git"
 	git clone --depth=1 -b $select_linux_kernel_branch --single-branch https://github.com/raspberrypi/linux.git
 fi
 
@@ -182,9 +187,9 @@ fi
 echo "----------------------------------------------------------------------------------------"
 echo "Setting configurations for build..."
 if [ "${bit_selection}" -eq 1 ]; then
-	cross_compiler= "arm-linux-gnueabihf"
+	cross_compiler="arm-linux-gnueabihf"
 else
-	cross_compiler= "aarch64-linux-gnu"
+	cross_compiler="aarch64-linux-gnu"
 fi
 pushd linux
 KERNEL=kernel7l
