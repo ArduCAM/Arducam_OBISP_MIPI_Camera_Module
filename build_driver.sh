@@ -45,10 +45,10 @@ sudo apt install crossbuild-essential-arm64 libssl-dev git flex bison -y
 sudo apt-get install gcc-arm* -y
 
 echo "----------------------------------------------------------------------------------------"
-ROOT_PATH= ${ROOT_PATH:-"${HOME}/Arducam"}
-echo -e "\033[33m A directory named '${ROOT_PATH}' will be created. If you want to change the download path, cancel the process and export the ROOT_PATH variable. \033[0m"
-read -p "Press any key to continue..."
-
+DEFAULT_ROOT_PATH= "${HOME}/Arducam"
+echo -e "\033[33m Enter a working directory. \033[0m"
+read -p "[default: ${DEFAULT_ROOT_PATH}]: " ROOT_PATH
+ROOT_PATH= ${ROOT_PATH:--"${HOME}/Arducam"}
 
 if [ "$(ls -A ${ROOT_PATH})" ]; then
 	echo -e "\033[31m'${ROOT_PATH}' already exists and is not empty.  The build may not work properly. \033[0m"
