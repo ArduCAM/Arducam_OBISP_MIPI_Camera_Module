@@ -17,13 +17,13 @@ echo "	1. 32 bit (arm)"
 echo "	2. 64 bit (arm64)"
 read -p "Select: " bit_selection
 if [ "${bit_selection}" = "1" ]; then
-	arch= "arm"
+	ARCH= "arm"
 else
-	arch= "arm64"
+	ARCH= "arm64"
 fi
 
 echo "----------------------------------------------------------------------------------------"
-echo "Installing compiler tools for ${arch}..."
+echo "Installing compiler tools for ${ARCH}..."
 echo "----------------------------------------------------------------------------------------"
 if [ "${bit_selection}" = "1" ]; then
 	echo "sudo apt-get install gcc-arm-linux-gnueabihf"
@@ -136,8 +136,8 @@ fi
 echo "----------------------------------------------------------------------------------------"
 echo "Copying device tree file of camera driver to linux kernel..."
 echo "----------------------------------------------------------------------------------------"
-echo "cp Arducam_OBISP_MIPI_Camera_Module/sourceCode/dts/arducam-overlay.dts linux/arch/${arch}/boot/dts/overlays/"
-cp Arducam_OBISP_MIPI_Camera_Module/sourceCode/dts/arducam-overlay.dts linux/arch/${arch}/boot/dts/overlays/
+echo "cp Arducam_OBISP_MIPI_Camera_Module/sourceCode/dts/arducam-overlay.dts linux/arch/${ARCH}/boot/dts/overlays/"
+cp Arducam_OBISP_MIPI_Camera_Module/sourceCode/dts/arducam-overlay.dts linux/arch/${ARCH}/boot/dts/overlays/
 
 if [ $? -eq 0 ]; then
 	echo "Done !!"
@@ -162,7 +162,7 @@ else
 fi
 
 echo "----------------------------------------------------------------------------------------"
-device_tree_makefile_path="linux/arch/${arch}/boot/dts/overlays/Makefile"
+device_tree_makefile_path="linux/arch/${ARCH}/boot/dts/overlays/Makefile"
 echo "Updating Makefile at location '${device_tree_makefile_path}'"
 TO_APPEND="\\\tarducam.dtbo \\\\"
 TO_FIND="imx219.dtbo"
@@ -201,7 +201,7 @@ else
 fi
 cd linux
 KERNEL=kernel7l
-make ARCH=${arch} CROSS_COMPILE=${cross_compiler}- bcm2711_defconfig
+make ARCH=${ARCH} CROSS_COMPILE=${cross_compiler}- bcm2711_defconfig
 
 TO_FIND="CONFIG_VIDEO_ARDUCAM"
 TO_REPLACE="CONFIG_VIDEO_ARDUCAM=m"
@@ -220,7 +220,7 @@ echo "Starting the build process..."
 
 CPU_COUNT=$(grep -c ^processor /proc/cpuinfo)
 
-make -j ${CPU_COUNT} ARCH=${arch} CROSS_COMPILE=${cross_compiler}- zImage modules dtbs -j8
+make -j ${CPU_COUNT} ARCH=${ARCH} CROSS_COMPILE=${cross_compiler}- zImage modules dtbs -j8
 
 if [ $? -eq 0 ]; then
 	echo "Done !!"
@@ -240,12 +240,12 @@ echo "Copying compiled driver into ${DRIVER_COPY_DIR}"
 mkdir ${DRIVER_COPY_DIR}
 
 cp linux/drivers/media/i2c/arducam.ko ${DRIVER_COPY_DIR}
-cp linux/arch/arm/boot/dts/overlays/arducam.dtbo ${DRIVER_COPY_DIR}
+cp linux/arch/${ARCH}/boot/dts/overlays/arducam.dtbo ${DRIVER_COPY_DIR}
 
 if [ $? -eq 0 ]; then
 	echo "Done !!"
 else
-	echo "error copying compiled driver files into '${ROOT_PATH}/${DRIVER_COPY_DIR}'. Please copy the files 'linux/drivers/media/i2c/arducam.ko' and 'linux/arch/arm/boot/dts/overlays/arducam.dtbo' on your own."
+	echo "error copying compiled driver files into '${ROOT_PATH}/${DRIVER_COPY_DIR}'. Please copy the files 'linux/drivers/media/i2c/arducam.ko' and 'linux/arch/${ARCH}/boot/dts/overlays/arducam.dtbo' on your own."
 	exit 1
 fi
 
@@ -268,7 +268,7 @@ DRIVER_COPY_PATH="${CURRENT_DIR}/Release/bin/${KERNEL_VERSION}"
 
 echo "Copying driver files into ${DRIVER_COPY_PATH}"
 cp linux/drivers/media/i2c/arducam.ko ${DRIVER_COPY_PATH}
-cp linux/arch/arm/boot/dts/overlays/arducam.dtbo ${DRIVER_COPY_PATH}
+cp linux/arch/${ARCH}/boot/dts/overlays/arducam.dtbo ${DRIVER_COPY_PATH}
 
 if [ $? -eq 0 ]; then
 	echo "Done !!"
