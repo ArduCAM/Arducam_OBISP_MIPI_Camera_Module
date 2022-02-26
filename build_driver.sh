@@ -98,9 +98,9 @@ fi
 echo "----------------------------------------------------------------------------------------"
 echo "Cloning camera driver source..."
 echo "----------------------------------------------------------------------------------------"
-if [ -d linux ]; then
+if [ -d Arducam_OBISP_MIPI_Camera_Module ]; then
 	echo "Repo exists.  Reverting..."
-	git -C Arducam_OBISP_MIPI_Camera_Module reset --hard HEAD --continue
+	git -C Arducam_OBISP_MIPI_Camera_Module reset --hard HEAD
 else
 	git clone https://github.com/ArduCAM/Arducam_OBISP_MIPI_Camera_Module.git
 fi
