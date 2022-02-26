@@ -59,7 +59,7 @@ ROOT_PATH=${ROOT_PATH:-${DEFAULT_ROOT_PATH}}
 if [ "$(ls -A ${ROOT_PATH})" ]; then
 	echo -e "\033[31m'${ROOT_PATH}' already exists and is not empty.  The build may not work properly. \033[0m"
 	read -p "Press any key to continue..."
-
+fi
 [ -d ${ROOT_PATH} ] && echo "Directory ${ROOT_PATH} exists and is empty. Continuing..." || mkdir ${ROOT_PATH}
 
 
