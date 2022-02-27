@@ -1,6 +1,9 @@
 #!/bin/bash
 set -x
 
+# Raspberry Pi Kernel building instructions: https://github.com/raspberrypi/documentation/blob/c666656d8782a509d7eae82ffe634cbd28b147b8/linux/kernel/building.md
+# Other cross compilation instructions: https://gist.github.com/G-UK/ee7edc4844f14fec12450b2211fc886e
+
 if [ ! ${HOME} ]; then
 	echo "No home directory."
 	exit 1
@@ -29,14 +32,9 @@ fi
 echo "${ARCH} selected."
 
 echo "----------------------------------------------------------------------------------------"
-echo "Installing compiler tools for ${ARCH}..."
+echo "Installing compiler tools..."
 echo "----------------------------------------------------------------------------------------"
-if [ ${bit_selection} -eq 1 ]; then
-	sudo apt-get install gcc-arm-linux-gnueabihf
-else
-	apt-get install gcc-aarch64-linux-gnu
-fi
-
+sudo apt install git bc bison flex libssl-dev make libc6-dev libncurses5-dev -y
 if [ $? -eq 0 ]; then
 	echo "Done !!"
 else
@@ -45,10 +43,20 @@ else
 fi
 
 echo "----------------------------------------------------------------------------------------"
-echo "Installing crossbuild tools..."
+echo "Installing crossbuild  tools for ${ARCH}..."
 echo "----------------------------------------------------------------------------------------"
-sudo apt install crossbuild-essential-arm64 libssl-dev git flex bison -y
-sudo apt-get install gcc-arm* -y
+if [ ${bit_selection} -eq 1 ]; then
+	apt install crossbuild-essential-armhf
+else
+	apt install crossbuild-essential-arm64
+fi
+if [ $? -eq 0 ]; then
+	echo "Done !!"
+else
+	echo "error installing compiler tools"
+	exit 1
+fi
+
 
 echo "----------------------------------------------------------------------------------------"
 DEFAULT_ROOT_PATH=${HOME}/Arducam
@@ -185,14 +193,18 @@ fi
 
 
 echo "----------------------------------------------------------------------------------------"
-echo "Setting configurations for build..."
+echo "Setting configurations for build (Raspberry Pi 4)..."
 if [ "${bit_selection}" -eq 1 ]; then
 	cross_compiler="arm-linux-gnueabihf"
 else
 	cross_compiler="aarch64-linux-gnu"
 fi
 pushd linux
-KERNEL=kernel7l
+if [ ${bit_selection} -eq 1]; then
+	KERNEL=kernel7l
+else
+	KERNEL=kernel8
+fi
 make ARCH=${ARCH} CROSS_COMPILE=${cross_compiler}- bcm2711_defconfig
 
 TO_FIND="CONFIG_VIDEO_ARDUCAM"
