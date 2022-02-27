@@ -102,7 +102,7 @@ if [ -d Arducam_OBISP_MIPI_Camera_Module ]; then
 	echo "Repo exists.  Reverting..."
 	git -C Arducam_OBISP_MIPI_Camera_Module reset --hard HEAD
 else
-	git clone https://github.com/ArduCAM/Arducam_OBISP_MIPI_Camera_Module.git
+	git clone --depth=1 https://github.com/ArduCAM/Arducam_OBISP_MIPI_Camera_Module.git
 fi
 	
 if [ $? -eq 0 ]; then
@@ -210,7 +210,15 @@ fi
 echo "----------------------------------------------------------------------------------------"
 CPU_COUNT=$(grep -c ^processor /proc/cpuinfo)
 echo "Starting the build process with ${CPU_COUNT} cores..."
-make -j ${CPU_COUNT} ARCH=${ARCH} CROSS_COMPILE=${cross_compiler}- zImage modules dtbs
+if [ ${bit_selection} = 1 ]; then
+	make -j ${CPU_COUNT} ARCH=${ARCH} CROSS_COMPILE=${cross_compiler}- zImage modules dtbs
+else
+	# Note: In the future, compressed kernel images (zImage) will probably be integrated, so this can go back to zImage
+	make -j ${CPU_COUNT} ARCH=${ARCH} CROSS_COMPILE=${cross_compiler}- Image modules dtbs \
+		CXXFLAGS="-march=armv8-a+crc -mtune=cortex-a72" \
+			CFLAGS="-march=armv8-a+crc -mtune=cortex-a72" \
+			bindeb-pkg
+fi
 
 if [ $? -eq 0 ]; then
 	echo "Done !!"
