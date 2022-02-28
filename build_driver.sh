@@ -34,13 +34,14 @@ echo "${ARCH} selected."
 echo "----------------------------------------------------------------------------------------"
 echo "Installing compiler tools..."
 echo "----------------------------------------------------------------------------------------"
-sudo apt install git bc bison flex libssl-dev make libc6-dev libncurses5-dev -y
+sudo apt install git bc bison flex libssl-dev make libc6-dev libncurses5-dev zip -y
 if [ $? -eq 0 ]; then
 	echo "Done !!"
 else
 	echo "error installing compiler tools"
 	exit 1
 fi
+sudo apt-get install gcc-arm* -y
 
 echo "----------------------------------------------------------------------------------------"
 echo "Installing crossbuild  tools for ${ARCH}..."
@@ -243,7 +244,8 @@ echo "Build process complete"
 echo "----------------------------------------------------------------------------------------"
 popd
 
-DRIVER_COPY_DIR="Arducam_OBISP_MIPI_Camera_Module/Release/bin/${select_linux_kernel_branch}"
+KERNEL_VERSION=$(head -n 1 linux/include/config/kernel.release)
+DRIVER_COPY_DIR="Arducam_OBISP_MIPI_Camera_Module/Release/bin/${KERNEL_VERSION}"
 echo "Copying compiled driver into ${DRIVER_COPY_DIR}"
 [ -d ${DRIVER_COPY_DIR} ] || mkdir ${DRIVER_COPY_DIR}
 
@@ -257,7 +259,13 @@ else
 	exit 1
 fi
 
-echo ""
+echo "----------------------------------------------------------------------------------------"
+echo "Zip Arducam_OBISP_MIPI_Camera_Module folder"
+pushd Arducam_OBISP_MIPI_Camera_Module/Release
+zip -r ${ROOT_DIR}/Arducam_OBISP_MIPI_Camera_Module_${ARCH}.zip .
+popd
+
+echo "----------------------------------------------------------------------------------------"
 echo "Driver built successfully and saved in '${DRIVER_COPY_DIR}'"
 
 echo "----------------------------------------------------------------------------------------"
