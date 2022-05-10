@@ -15,6 +15,7 @@ Current driver supports the following kerner version, for other kernel please se
 * 5.4.51+
 * 5.4.51-v7+
 * 5.4.51-v7l+
+* 5.10.92-v8+
 
 For Arducam mipi camera + Pivariety driver, referring to https://github.com/ArduCAM/Arducam-Pivariety-V4L2-Driver
 # Support document
