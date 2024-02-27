@@ -81,7 +81,7 @@
 #define arducam_TEST_PATTERN_PN9 4
 static int debug = 0;
 
-#define SET_CTRL_RETRIES 5
+#define SET_CTRL_RETRIES 10
 #define SET_CTRL_DELAY_MS 1
 
 struct arducam_reg
